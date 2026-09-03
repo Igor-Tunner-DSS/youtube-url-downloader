@@ -4,6 +4,19 @@ import yt_dlp
 
 LINKS_FILE = Path("links.txt")
 OUTPUT_DIR = Path("YTAudio_result")
+CHOSEN_FORMAT = "video"
+
+print("="*60)
+print("Choose a format: [A]udio | [V]ideo")
+print()
+ans = input().lower().strip()
+if ans in ["a", "audio"]:
+    CHOSEN_FORMAT = "audio"
+elif ans in ["v", "video"]:
+    ...
+else:
+    print("Not an option. Quitting program")
+    exit()
 
 
 def read_links():
@@ -38,10 +51,10 @@ def main():
     OUTPUT_DIR.mkdir(exist_ok=True)
 
     print(f"Found {len(links)} URL(s).")
-    print(f"Saving audio to: {OUTPUT_DIR.resolve()}")
+    print(f"Saving {'video(s)' if CHOSEN_FORMAT == 'video' else 'audio(s)'} to: {OUTPUT_DIR.resolve()}")
     print()
 
-    ydl_opts = {
+    ydl_audio_opts = {
         # Audio only
         "format": "bestaudio/best",
 
@@ -77,10 +90,30 @@ def main():
         # Avoid overwriting an existing file
         "nooverwrites": True,
     }
+    ydl_video_opts = {
+        # Prefer H.264 video + AAC audio.
+        # Fall back to the best single-file MP4 if necessary.
+        "format": "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/b[ext=mp4]",
+
+        "outtmpl": str(OUTPUT_DIR / "%(title)s.%(ext)s"),
+
+        "ignoreerrors": True,
+        "quiet": True,
+        "no_warnings": False,
+        "nooverwrites": True,
+
+        # Tell yt-dlp to use MP4 when it has to merge
+        # separate video/audio streams.
+        "merge_output_format": "mp4",
+
+        "js_runtimes": {"node": {}},
+    }
 
     successful = 0
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+    ydl_opts = ydl_video_opts if CHOSEN_FORMAT == 'video' else ydl_audio_opts
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl: # type: ignore
         for index, url in enumerate(links, start=1):
             print("=" * 60)
             print(f"[{index}/{len(links)}] Downloading:")
