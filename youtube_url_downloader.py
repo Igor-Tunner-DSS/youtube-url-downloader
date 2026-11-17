@@ -3,7 +3,7 @@ import yt_dlp
 
 
 LINKS_FILE = Path("links.txt")
-OUTPUT_DIR = Path("YTAudio_result")
+OUTPUT_DIR = Path("YT_result")
 CHOSEN_FORMAT = "video"
 
 print("="*60)
