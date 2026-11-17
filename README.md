@@ -1,18 +1,18 @@
-# YouTube Audio Downloader
+# YouTube Audio/Video Downloader
 
-A simple Python program that reads YouTube URLs from a `links.txt` file and downloads their audio as MP3 files.
+A simple Python program that reads YouTube URLs from a `links.txt` file and downloads them as MP3/MP4 files.
 
-The program uses [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) for downloading and FFmpeg for audio extraction/conversion.
+The program uses [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) for downloading and FFmpeg for media extraction/conversion.
 
 ## Features
 
 * Downloads multiple YouTube URLs from a single `links.txt` file.
 * Downloads **audio only**, without saving the video.
-* Converts the downloaded audio to **MP3**.
-* Uses **160 kbps** audio quality as a balance between file size and quality.
-* Saves files in a `YTAudio_result` directory.
-* Uses the **actual YouTube video title** as the filename.
-* Automatically creates the output directory if it does not exist.
+* Downloads **video + audio** in the desired quality
+* Converts the downloaded audio to **MP3** or **MP4**, respectively.
+* Uses **160 kbps** (default) audio quality as a balance between file size and quality.
+* Saves files in a `YT_result` directory.
+* Uses the YouTube video title as the filename.
 * Skips blank lines and comments in `links.txt`.
 * Continues downloading the remaining URLs if one download fails.
 * Does not require a YouTube API key.
@@ -62,7 +62,7 @@ yt-dlp --version
 
 ### 3. Install FFmpeg
 
-FFmpeg is required because yt-dlp uses it to extract and convert the downloaded audio.
+FFmpeg is required because yt-dlp uses it to extract and convert the downloaded media.
 
 Official website:
 
@@ -87,16 +87,16 @@ If either command is not recognized, FFmpeg is probably not correctly configured
 The project can be organized like this:
 
 ```text
-youtube-audio-downloader/
+youtube-url-downloader/
 │
 ├── links.txt
-├── youtube_audio_downloader.py
+├── youtube_url_downloader.py
 ├── README.md
 │
-└── YTAudio_result/
+└── YT_result/
 ```
 
-`YTAudio_result` is created automatically the first time the program runs, so you do not need to create it manually.
+`YT_result` is created automatically the first time the program runs, so you do not need to create it manually.
 
 ## Using `links.txt`
 
@@ -132,7 +132,7 @@ Only the actual URLs will be processed.
 Open a terminal in the project directory and run:
 
 ```bash
-python youtube_audio_downloader.py
+python youtube_url_downloader.py
 ```
 
 The program will process every URL in `links.txt`.
@@ -141,7 +141,7 @@ Example:
 
 ```text
 Found 3 URL(s).
-Saving audio to: C:\Projects\youtube-audio-downloader\YTAudio_result
+Saving audio to: C:\Projects\youtube-url-downloader\YT_result
 
 ============================================================
 [1/3] Downloading:
@@ -153,19 +153,18 @@ https://www.youtube.com/watch?v=xxxxxxxxxxx
 ============================================================
 Finished.
 Successful: 3/3
-Output folder: C:\Projects\youtube-audio-downloader\YTAudio_result
+Output folder: C:\Projects\youtube-url-downloader\YT_result
 ============================================================
 ```
 
 ## Output
 
-Audio files are saved in:
+Files are saved in:
 
 ```text
-YTAudio_result/
+YT_result/
 ```
 
-The filenames are based on the **actual YouTube titles**.
 
 For example, if YouTube has these video titles:
 
@@ -184,9 +183,7 @@ YTAudio_result/
 └── Example Song (Official Audio).mp3
 ```
 
-The program does **not** enumerate files as `Song 1`, `Song 2`, etc.
-
-## Audio Quality
+## Media Quality
 
 The program converts audio to:
 
@@ -224,7 +221,7 @@ The main configuration is located near the beginning of the Python script:
 
 ```python
 LINKS_FILE = Path("links.txt")
-OUTPUT_DIR = Path("YTAudio_result")
+OUTPUT_DIR = Path("YT_result")
 ```
 
 You can change these paths if necessary.
@@ -256,15 +253,6 @@ The MP3 conversion is configured with:
 This project **does not require a YouTube API key**.
 
 It uses `yt-dlp` to handle the media extraction instead of the YouTube Data API.
-
-Therefore, you do not need to:
-
-* Create a Google Cloud project.
-* Enable the YouTube Data API.
-* Generate an API key.
-* Pay for an API subscription.
-
-There is no API payment requirement for this project.
 
 ## Handling Failed Downloads
 
@@ -332,7 +320,7 @@ py -m pip install -U yt-dlp
 and run the program with:
 
 ```bash
-py youtube_audio_downloader.py
+py youtube_url_downloader.py
 ```
 
 ### `No module named 'yt_dlp'`
@@ -366,15 +354,15 @@ Make sure `links.txt` is in the same directory from which you are running the pr
 For example:
 
 ```text
-youtube-audio-downloader/
+youtube-url-downloader/
 ├── links.txt
-└── youtube_audio_downloader.py
+└── youtube_url_downloader.py
 ```
 
 Then run:
 
 ```bash
-python youtube_audio_downloader.py
+python youtube_url_downloader.py
 ```
 
 ### Some videos fail while others work
@@ -389,129 +377,6 @@ python -m pip install -U yt-dlp
 
 Then try the URL again.
 
-## Full Script
-
-The complete program is:
-
-```python
-from pathlib import Path
-import yt_dlp
-
-
-LINKS_FILE = Path("links.txt")
-OUTPUT_DIR = Path("YTAudio_result")
-
-
-def read_links():
-    if not LINKS_FILE.exists():
-        print(f"ERROR: {LINKS_FILE} was not found.")
-        return []
-
-    links = []
-
-    with LINKS_FILE.open("r", encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-
-            if not line:
-                continue
-
-            if line.startswith("#"):
-                continue
-
-            links.append(line)
-
-    return links
-
-
-def main():
-    links = read_links()
-
-    if not links:
-        print("No YouTube URLs found in links.txt.")
-        return
-
-    OUTPUT_DIR.mkdir(exist_ok=True)
-
-    print(f"Found {len(links)} URL(s).")
-    print(f"Saving audio to: {OUTPUT_DIR.resolve()}")
-    print()
-
-    ydl_opts = {
-        "format": "bestaudio/best",
-
-        "postprocessors": [
-            {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "160",
-            }
-        ],
-
-        "outtmpl": str(
-            OUTPUT_DIR / "%(title)s.%(ext)s"
-        ),
-
-        "noplaylist": True,
-        "ignoreerrors": True,
-        "quiet": False,
-        "no_warnings": False,
-        "nooverwrites": True,
-    }
-
-    successful = 0
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        for index, url in enumerate(links, start=1):
-            print("=" * 60)
-            print(f"[{index}/{len(links)}] Downloading:")
-            print(url)
-            print("=" * 60)
-
-            try:
-                result = ydl.download([url])
-
-                if result == 0:
-                    successful += 1
-
-            except Exception as error:
-                print(f"Failed: {error}")
-
-            print()
-
-    print("=" * 60)
-    print("Finished.")
-    print(f"Successful: {successful}/{len(links)}")
-    print(f"Output folder: {OUTPUT_DIR.resolve()}")
-    print("=" * 60)
-
-
-if __name__ == "__main__":
-    main()
-```
-
 ## License
 
 This project does not include a specific license by default.
-
-If you publish it publicly, consider adding an open-source license such as the MIT License.
-
-## Summary
-
-The basic workflow is:
-
-```text
-1. Install Python
-       ↓
-2. Install yt-dlp
-       ↓
-3. Install FFmpeg
-       ↓
-4. Put YouTube URLs in links.txt
-       ↓
-5. Run youtube_audio_downloader.py
-       ↓
-6. MP3 files appear in YTAudio_result/
-```
-
-No YouTube API key is required, and no paid API or subscription is required.
